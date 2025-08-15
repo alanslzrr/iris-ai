@@ -59,14 +59,18 @@ spec:
               value: "http://portal.phoenixcalibrationdr.com/api/Calibration/GetCertificateDataByCertNo/{certNo}"
             - name: LIST_ALL_CERTIFICATES_API_URL
               value: "http://portal.phoenixcalibrationdr.com/api/Calibration/GetCertificatesDataListByEquipmentType"
+            - name: SUPABASE_PORT
+              value: "6543"
+            - name: SUPABASE_DBNAME
+              value: "postgress"
             - name: NEXT_PUBLIC_SITE_URL
-              value: "http://localhost:3000"
+              value: "https://iris-ai-PROJECT_ID.a.run.app"
             - name: NEXT_PUBLIC_SUPABASE_URL
               value: "https://zdxpdutejsnguwawlwbo.supabase.co"
             - name: SUPABASE_URL
               value: "https://zdxpdutejsnguwawlwbo.supabase.co"
             - name: NEXTAUTH_URL
-              value: "http://localhost:3000"
+              value: "https://iris-ai-PROJECT_ID.a.run.app"
             - name: PHOENIX_USERNAME
               valueFrom:
                 secretKeyRef:
