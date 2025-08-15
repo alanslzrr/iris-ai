@@ -51,6 +51,42 @@ spec:
                 secretKeyRef:
                   name: SESSION_SECRET
                   key: latest
+            - name: PHOENIX_LOGIN_API_URL
+              value: "http://portal.phoenixcalibrationdr.com/api/auth/login"
+            - name: PHOENIX_LIST_API_URL
+              value: "http://portal.phoenixcalibrationdr.com/api/Calibration/GetPendingToApproveCalibrationList"
+            - name: PHOENIX_DETAIL_API_URL_TEMPLATE
+              value: "http://portal.phoenixcalibrationdr.com/api/Calibration/GetCertificateDataByCertNo/{certNo}"
+            - name: LIST_ALL_CERTIFICATES_API_URL
+              value: "http://portal.phoenixcalibrationdr.com/api/Calibration/GetCertificatesDataListByEquipmentType"
+            - name: NEXT_PUBLIC_SITE_URL
+              value: "http://localhost:3000"
+            - name: NEXT_PUBLIC_SUPABASE_URL
+              value: "https://zdxpdutejsnguwawlwbo.supabase.co"
+            - name: SUPABASE_URL
+              value: "https://zdxpdutejsnguwawlwbo.supabase.co"
+            - name: NEXTAUTH_URL
+              value: "http://localhost:3000"
+            - name: PHOENIX_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: USERNAME_PHOENIX_ENDPOINT
+                  key: latest
+            - name: PHOENIX_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: PASSWORD_PHOENIX_ENDPOINT
+                  key: latest
+            - name: SUPABASE_SERVICE_ROLE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: SUPABASE_SERVICE_ROLE_KEY
+                  key: latest
+            - name: NEXT_PUBLIC_SUPABASE_ANON_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: SUPABASE_KEY_WIZARD
+                  key: latest
           livenessProbe:
             httpGet:
               path: /api/health
