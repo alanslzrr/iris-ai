@@ -1,0 +1,69 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: iris-ai
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/execution-environment: gen2
+    run.googleapis.com/cpu-throttling: "false"
+    run.googleapis.com/cpu-boost: "true"
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/cpu-throttling: "false"
+        run.googleapis.com/cpu-boost: "true"
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "10"
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      containers:
+        - image: gcr.io/PROJECT_ID/iris-ai:latest
+          ports:
+            - containerPort: 3000
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: NEXT_TELEMETRY_DISABLED
+              value: "1"
+            - name: HOSTNAME
+              value: "0.0.0.0"
+            - name: PORT
+              value: "3000"
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: GOOGLE_CLIENT_ID
+                  key: latest
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: GOOGLE_CLIENT_SECRET
+                  key: latest
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: SESSION_SECRET
+                  key: latest
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3

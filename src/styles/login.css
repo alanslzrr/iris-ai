@@ -1,0 +1,136 @@
+.login-background-base {
+  width: 100%;
+  position: absolute;
+  z-index: -1;
+}
+
+.grid-bg {
+  background: url('/assets/background/grid-bg.svg') no-repeat;
+}
+
+.grain-background {
+  mix-blend-mode: overlay;
+  background: url('/assets/background/grain-bg.svg') repeat;
+}
+
+.login-gradient-background {
+  background: url('/assets/background/login-gradient.svg') no-repeat top;
+}
+
+.login-card-border,
+.login-card-hard-blur,
+.login-card-vertical-hard-blur,
+.login-card-soft-blur,
+.login-card-yellow-highlight {
+  position: relative;
+}
+
+.login-card-border::before {
+  content: '';
+  z-index: -1;
+  position: absolute;
+  inset: 0;
+  border-radius: 16px 16px 0 0;
+  padding: 1px 1px 0;
+  background: linear-gradient(180deg, #414b4e 49.5%, rgba(65, 75, 78, 0) 100%);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.login-card-hard-blur::before {
+  content: '';
+  width: 88px;
+  height: 4px;
+  position: absolute;
+  left: 50%;
+  margin-left: -44px;
+  top: -2px;
+  background: #f44336;
+  opacity: 0.5;
+  filter: blur(12px);
+}
+
+.login-card-vertical-hard-blur::before {
+  content: '';
+  width: 128px;
+  height: 320px;
+  position: absolute;
+  left: 50%;
+  margin-left: -64px;
+  top: -160px;
+  border-radius: 320px;
+  opacity: 0.08;
+  background: linear-gradient(
+    to bottom,
+    #f44336 0%,
+    rgba(244, 67, 54, 0.6) 70%,
+    rgba(244, 67, 54, 0.2) 100%
+  );
+  filter: blur(48px);
+}
+
+.login-card-small-soft-blur::before {
+  width: 250px;
+}
+.login-card-medium-soft-blur::before {
+  width: 384px;
+}
+.login-card-soft-blur::before {
+  content: '';
+  height: 80px;
+  position: absolute;
+  left: 50%;
+  margin-left: -192px;
+  top: -40px;
+  border-radius: 384px;
+  opacity: 0.25;
+  background: linear-gradient(
+    to bottom,
+    #f44336 0%,
+    rgba(244, 67, 54, 0.6) 50%,
+    rgba(244, 67, 54, 0.2) 100%
+  );
+  filter: blur(40px);
+}
+
+.login-card-small-yellow-highlight::before {
+  width: 250px;
+  margin-left: -125px;
+}
+.login-card-medium-yellow-highlight::before {
+  width: 384px;
+  margin-left: -192px;
+}
+
+.login-card-yellow-highlight::before {
+  content: '';
+  height: 1px;
+  left: 50%;
+
+  position: absolute;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 15%,
+    rgba(244, 67, 54, 0.9) 50%,
+    rgba(255, 255, 255, 0) 85%
+  );
+}
+
+.login-card-bottom-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.2) 40%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
