@@ -92,6 +92,7 @@ export default function PhoenixCalibrationAnimation({
 
   // Orchestrated loop: advance to end, show checks, fade, hard-reset, resume
   const [fading, setFading] = React.useState(false);
+  const animationControlsRef = React.useRef<ReturnType<typeof animate> | null>(null);
   React.useEffect(() => {
     if (reduce) {
       progress.set(1);
@@ -106,8 +107,13 @@ export default function PhoenixCalibrationAnimation({
         setFading(false);
         const current = Math.max(0, Math.min(1, progress.get()));
         const dur = Math.max(2, cycleSeconds) * (1 - current);
-        const ctrl = animate(progress, 1, { duration: Math.max(0.0001, dur), ease: "linear" });
-        try { await ctrl.finished; } catch {}
+        await new Promise<void>((resolve) => {
+          animationControlsRef.current = animate(progress, 1, {
+            duration: Math.max(0.0001, dur),
+            ease: "linear",
+            onComplete: () => resolve(),
+          });
+        });
         if (cancelled) break;
         setShowChecklist(true);
         await wait(700);
@@ -121,7 +127,7 @@ export default function PhoenixCalibrationAnimation({
       }
     };
     run();
-    return () => { cancelled = true; progress.stop(); };
+    return () => { cancelled = true; animationControlsRef.current?.stop(); progress.stop(); };
   }, [progress, cycleSeconds, reduce]);
 
   // hover pause/resume
@@ -134,14 +140,20 @@ export default function PhoenixCalibrationAnimation({
     const onEnter = () => {
       if (paused) return;
       paused = true;
-      progress.stop();
+      // Pause current animation instead of cancelling it
+      (animationControlsRef as any)?.current?.pause?.();
     };
     const onLeave = () => {
       if (!paused) return;
       paused = false;
-      const current = Math.max(0, Math.min(1, progress.get()));
-      const dur = Math.max(2, cycleSeconds) * (1 - current);
-      animate(progress, 1, { duration: Math.max(0.0001, dur), ease: "linear" });
+      // Resume if available; fallback to re-creating the animation
+      if ((animationControlsRef as any)?.current?.play) {
+        (animationControlsRef as any).current.play();
+      } else {
+        const current = Math.max(0, Math.min(1, progress.get()));
+        const dur = Math.max(2, cycleSeconds) * (1 - current);
+        (animationControlsRef as any).current = animate(progress, 1, { duration: Math.max(0.0001, dur), ease: "linear" });
+      }
     };
     el.addEventListener("pointerenter", onEnter);
     el.addEventListener("pointerleave", onLeave);
