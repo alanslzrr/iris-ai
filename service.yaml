@@ -20,7 +20,7 @@ spec:
       containerConcurrency: 80
       timeoutSeconds: 300
       containers:
-        - image: us-central1-docker.pkg.dev/gen-lang-client-0787198398/cloud-run-source-deploy/iris-ai/iris-ai:latest
+        - image: gcr.io/PROJECT_ID/iris-ai:latest
           ports:
             - containerPort: 3000
           resources:
