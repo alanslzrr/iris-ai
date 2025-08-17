@@ -96,10 +96,6 @@ export default function ReportViewerMainPage() {
                 <FileText className="h-4 w-4 mr-2" />
                 View PDF
               </Button>
-              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
             </div>
           </div>
         )}
