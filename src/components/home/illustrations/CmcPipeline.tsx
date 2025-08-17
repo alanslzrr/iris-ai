@@ -295,16 +295,17 @@ function AnimatedRail({
         top: 0,
         bottom: 0,         // full column height
         width: 28,
+        height: "100%",
         pointerEvents: "none",
         filter: "drop-shadow(0 0 8px rgba(255,176,0,0.38))",
       }}
     >
       <defs>
         {/* Tri-stop brand gradient in rail coordinates */}
-        <linearGradient id={`${id}-base`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="100">
-          <stop offset="0%"   stopColor="var(--railStart)" />
-          <stop offset="50%"  stopColor="var(--railMid)" />
-          <stop offset="100%" stopColor="var(--railEnd)" />
+        <linearGradient id={`${id}-base`} gradientUnits="objectBoundingBox" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="var(--railStart, #ff0033)" />
+          <stop offset="50%"  stopColor="var(--railMid, #ff8a00)" />
+          <stop offset="100%" stopColor="var(--railEnd, #ffde59)" />
         </linearGradient>
 
         {/* Ambient moving sheen */}
@@ -342,7 +343,7 @@ function AnimatedRail({
       </defs>
 
       {/* Base rail */}
-      <path d="M14 0 L14 100" stroke={`url(#${id}-base)`} strokeWidth="2" strokeLinecap="round" />
+      <path d="M14 0 L14 100" stroke={`url(#${id}-base)`} strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
 
       {/* Ambient sheen riding down the rail */}
       {!prefersReducedMotion && (
@@ -352,6 +353,7 @@ function AnimatedRail({
           strokeWidth="2"
           strokeLinecap="round"
           opacity={0.7}
+          vectorEffect="non-scaling-stroke"
         />
       )}
 
@@ -367,6 +369,7 @@ function AnimatedRail({
         filter={`url(#${id}-glow)`}
         style={{ mixBlendMode: "screen" }}
         strokeDasharray="12 100"
+        vectorEffect="non-scaling-stroke"
       />
     </svg>
   );

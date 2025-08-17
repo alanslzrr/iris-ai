@@ -16,6 +16,7 @@
     type MotionValue,
   } from "framer-motion";
   import { Button } from "@once-ui-system/core";
+  import { CheckCircle2, Zap, Lock } from "lucide-react";
 
   /* ---------------- Motion variants ---------------- */
 
@@ -133,25 +134,19 @@
 
           <motion.div
             variants={item}
-            className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-white/50"
+            className="mt-10 flex flex-wrap items-center gap-3"
           >
-            <div className="inline-flex items-center gap-2">
-              <span className="icon-chip" aria-hidden>
-                ✓
-              </span>
-              <span>ISO/IEC workflows baked in</span>
+            <div className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-2.5 py-1">
+              <CheckCircle2 className="h-3.5 w-3.5 text-white/70" aria-hidden="true" />
+              <span className="text-[12px] text-white/70">ISO/IEC workflows baked in</span>
             </div>
-            <div className="inline-flex items-center gap-2">
-              <span className="icon-chip" aria-hidden>
-                ⚡
-              </span>
-              <span>Sub-2s average check</span>
+            <div className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-2.5 py-1">
+              <Zap className="h-3.5 w-3.5 text-white/70" aria-hidden="true" />
+              <span className="text-[12px] text-white/70">Sub-2s average check</span>
             </div>
-            <div className="inline-flex items-center gap-2">
-              <span className="icon-chip" aria-hidden>
-                🔒
-              </span>
-              <span>SSO & role controls</span>
+            <div className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-2.5 py-1">
+              <Lock className="h-3.5 w-3.5 text-white/70" aria-hidden="true" />
+              <span className="text-[12px] text-white/70">SSO & role controls</span>
             </div>
           </motion.div>
         </motion.div>

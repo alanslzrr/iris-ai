@@ -20,7 +20,7 @@ spec:
       containerConcurrency: 80
       timeoutSeconds: 300
       containers:
-        - image: gcr.io/PROJECT_ID/iris-ai:latest
+        - image: us-central1-docker.pkg.dev/gen-lang-client-0787198398/cloud-run-source-deploy/iris-ai/iris-ai:latest
           ports:
             - containerPort: 3000
           resources:
@@ -64,13 +64,13 @@ spec:
             - name: SUPABASE_DBNAME
               value: "postgress"
             - name: NEXT_PUBLIC_SITE_URL
-              value: "https://iris-ai-PROJECT_ID.a.run.app"
+              value: "https://iris-ai-339343666693.us-central1.run.app"
             - name: NEXT_PUBLIC_SUPABASE_URL
               value: "https://zdxpdutejsnguwawlwbo.supabase.co"
             - name: SUPABASE_URL
               value: "https://zdxpdutejsnguwawlwbo.supabase.co"
             - name: NEXTAUTH_URL
-              value: "https://iris-ai-PROJECT_ID.a.run.app"
+              value: "https://iris-ai-339343666693.us-central1.run.app"
             - name: PHOENIX_USERNAME
               valueFrom:
                 secretKeyRef:

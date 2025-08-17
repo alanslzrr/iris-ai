@@ -22,9 +22,17 @@ export async function GET(request: Request) {
     // 1.1 Volume Metrics
     const phoenixCerts = await phoenixApiService.getAllCertificates();
     
+    // Supabase certificates (all-time) for coverage metrics
     const { data: supabaseCerts, count: totalSupabase } = await supabase
       .from('evaluation_reports')
       .select('cert_no, created_at', { count: 'exact' });
+
+    // Supabase certificates within the selected time range for daily averages
+    const { data: supabaseCertsInRange } = await supabase
+      .from('evaluation_reports')
+      .select('cert_no, created_at')
+      .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString());
 
     const coverage = phoenixApiService.calculateProcessingCoverage(phoenixCerts, supabaseCerts || []);
 
@@ -61,8 +69,8 @@ export async function GET(request: Request) {
       }
     });
 
-    // Count Supabase certificates by date
-    supabaseCerts?.forEach(cert => {
+    // Count Supabase certificates by date (only within selected range)
+    supabaseCertsInRange?.forEach(cert => {
       if (cert.created_at) {
         const date = format(new Date(cert.created_at), 'yyyy-MM-dd');
         if (dailyData[date]) {
@@ -83,6 +91,10 @@ export async function GET(request: Request) {
       supabaseCount: data.supabaseCount,
       processingRate: Math.round(data.rate * 10) / 10
     }));
+
+    // Calculate Supabase-only average daily processed for the selected range
+    const totalEvaluatedInRange = (supabaseCertsInRange?.length || 0);
+    const averageDailyProcessed = Math.round((totalEvaluatedInRange / days) * 10) / 10;
 
     return NextResponse.json({
       success: true,
@@ -105,9 +117,8 @@ export async function GET(request: Request) {
         dailyEvolution: {
           chartData: dailyEvolution,
           summary: {
-            averageRate: Math.round(
-              dailyEvolution.reduce((sum, item) => sum + item.processingRate, 0) / dailyEvolution.length * 10
-            ) / 10
+            // Supabase-only metric to align with Analytics
+            averageDaily: averageDailyProcessed
           }
         }
       },

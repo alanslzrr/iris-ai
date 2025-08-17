@@ -1,7 +1,7 @@
 "use client";
 import { motion } from 'framer-motion';
 import { containerStagger, fadeInUp, slideInLeft } from '../../motion/variants';
-import { Card, Column, Row, Text, Badge, Avatar } from '@once-ui-system/core';
+import { Card, Column, Row, Text, Badge } from '@once-ui-system/core';
 import { Workflow, DatabaseBackup, Activity } from 'lucide-react';
 import BatchOrchestrator from '../../illustrations/BatchOrchestrator';
 
@@ -32,15 +32,15 @@ export default function OrchestratorV2() {
             </motion.div>
             <Column gap="16">
               <Row gap="12" vertical="center">
-                <Avatar size="m" background="brand-alpha-weak" border="brand-alpha-medium" radius="l"><Workflow className="w-5 h-5" /></Avatar>
+                <Workflow className="w-5 h-5 text-neutral-400" aria-hidden="true" />
                 <Text variant="label-default-m" onBackground="neutral-strong">Parallel Processing</Text>
               </Row>
               <Row gap="12" vertical="center">
-                <Avatar size="m" background="accent-alpha-weak" border="accent-alpha-medium" radius="l"><DatabaseBackup className="w-5 h-5" /></Avatar>
+                <DatabaseBackup className="w-5 h-5 text-neutral-400" aria-hidden="true" />
                 <Text variant="label-default-m" onBackground="neutral-strong">Intelligent Queuing</Text>
               </Row>
               <Row gap="12" vertical="center">
-                <Avatar size="m" background="brand-alpha-weak" border="brand-alpha-medium" radius="l"><Activity className="w-5 h-5" /></Avatar>
+                <Activity className="w-5 h-5 text-neutral-400" aria-hidden="true" />
                 <Text variant="label-default-m" onBackground="neutral-strong">Progress Tracking</Text>
               </Row>
             </Column>

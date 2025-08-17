@@ -17,8 +17,15 @@ export function ThemeSwitcher() {
   };
 
   return (
-    <Button size="icon" onClick={handleValueChange}>
-      {themeMode === "dark" ? <Sun /> : <Moon />}
+    <Button
+      size="icon"
+      variant="ghost"
+      className="h-8 w-8"
+      onClick={handleValueChange}
+      aria-label="Toggle theme"
+      title="Toggle theme"
+    >
+      {themeMode === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </Button>
   );
 } 

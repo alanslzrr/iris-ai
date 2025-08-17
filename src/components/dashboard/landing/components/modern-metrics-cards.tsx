@@ -92,7 +92,7 @@ interface Panel1Data {
   };
   dailyEvolution: {
     chartData: Array<{date: string; phoenixCount: number; supabaseCount: number; processingRate: number}>;
-    summary: {averageRate: number};
+    summary: {averageDaily: number};
   };
 }
 
@@ -199,9 +199,9 @@ export function ModernMetricsCards() {
       }
     },
     {
-      title: "Average Daily Rate",
-      value: `${panel1Data.dailyEvolution.summary.averageRate}%`,
-      description: "Average daily processing coverage",
+      title: "Avg Daily Processed",
+      value: panel1Data.dailyEvolution.summary.averageDaily.toFixed(1),
+      description: "Average daily processed by Iris AI",
       icon: BarChart3,
       badge: { 
         text: "30-day avg", 

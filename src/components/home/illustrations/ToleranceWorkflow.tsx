@@ -262,7 +262,7 @@ export default function ToleranceWorkflow({
             vectorEffect="non-scaling-stroke"
             initial={{ pathLength: 0, opacity: 0.6 }}
             animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.18 * i }}
+            transition={{ duration: 1.0, ease: "easeOut", delay: 0.14 * i }}
           />
         ))}
 
@@ -307,6 +307,7 @@ export default function ToleranceWorkflow({
                 fill="#fff"
                 fontSize={12}
                 style={{ opacity: labelOpacity as any }}
+                transition={{ type: "spring", stiffness: 220, damping: 26, mass: 0.6 }}
               >
                 {b.label}
               </motion.text>

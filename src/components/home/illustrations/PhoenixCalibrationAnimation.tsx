@@ -9,6 +9,7 @@
 import React from "react";
 import {
   animate,
+  motion,
   MotionValue,
   useMotionValue,
   useMotionValueEvent,
@@ -51,11 +52,11 @@ export default function PhoenixCalibrationAnimation({
     { key: "s3", label: "Tolerance Assessment", width: 196 },
   ],
   totalMeasurePoints = 16,
-  startAtPoints = 4,
+  startAtPoints = 0,
   cycleSeconds = 6,
   pauseOnHover = true,
   interactiveScrub = true,
-  loopMode = "reverse", // NEW: ping-pong by default for seamless ends
+  loopMode = "loop", // forward-only; we orchestrate hard resets
 }: Props) {
   const reduce = useReducedMotion();
   const maxIdx = Math.max(0, levels.length - 1);
@@ -89,21 +90,39 @@ export default function PhoenixCalibrationAnimation({
     else if (p > 0.97) setShowChecklist(true);
   });
 
-  // duration-based loop driver (imperative MV animation per docs) :contentReference[oaicite:3]{index=3}
+  // Orchestrated loop: advance to end, show checks, fade, hard-reset, resume
+  const [fading, setFading] = React.useState(false);
   React.useEffect(() => {
     if (reduce) {
       progress.set(1);
+      setShowChecklist(true);
       return;
     }
-    const controls = animate(progress, 1, {
-      duration: Math.max(2, cycleSeconds),
-      ease: "linear",
-      repeat: Infinity,
-      repeatType: loopMode, // NEW: "reverse" (ping-pong) by default :contentReference[oaicite:4]{index=4}
-      repeatDelay: 0.6,
-    });
-    return () => controls.stop();
-  }, [progress, cycleSeconds, reduce, loopMode]);
+    let cancelled = false;
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const run = async () => {
+      while (!cancelled) {
+        setShowChecklist(false);
+        setFading(false);
+        const current = Math.max(0, Math.min(1, progress.get()));
+        const dur = Math.max(2, cycleSeconds) * (1 - current);
+        const ctrl = animate(progress, 1, { duration: Math.max(0.0001, dur), ease: "linear" });
+        try { await ctrl.finished; } catch {}
+        if (cancelled) break;
+        setShowChecklist(true);
+        await wait(700);
+        if (cancelled) break;
+        setFading(true);
+        await wait(380);
+        if (cancelled) break;
+        progress.set(0); // jump to start without backtracking
+        setFading(false);
+        await wait(260);
+      }
+    };
+    run();
+    return () => { cancelled = true; progress.stop(); };
+  }, [progress, cycleSeconds, reduce]);
 
   // hover pause/resume
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -111,37 +130,26 @@ export default function PhoenixCalibrationAnimation({
     if (!pauseOnHover || reduce) return;
     const el = containerRef.current;
     if (!el) return;
-
     let paused = false;
-    let resumeControls: ReturnType<typeof animate> | null = null;
-
-    const pause = () => {
+    const onEnter = () => {
       if (paused) return;
       paused = true;
       progress.stop();
-      resumeControls?.stop();
-      resumeControls = null;
     };
-    const resume = () => {
+    const onLeave = () => {
       if (!paused) return;
       paused = false;
-      // Recreate the same repeating animation from the current value
-      resumeControls = animate(progress, 1, {
-        duration: Math.max(2, cycleSeconds) * (1 - progress.get()),
-        ease: "linear",
-        repeat: Infinity,
-        repeatType: loopMode, // NEW
-        repeatDelay: 0.6,
-      });
+      const current = Math.max(0, Math.min(1, progress.get()));
+      const dur = Math.max(2, cycleSeconds) * (1 - current);
+      animate(progress, 1, { duration: Math.max(0.0001, dur), ease: "linear" });
     };
-
-    el.addEventListener("pointerenter", pause);
-    el.addEventListener("pointerleave", resume);
+    el.addEventListener("pointerenter", onEnter);
+    el.addEventListener("pointerleave", onLeave);
     return () => {
-      el.removeEventListener("pointerenter", pause);
-      el.removeEventListener("pointerleave", resume);
+      el.removeEventListener("pointerenter", onEnter);
+      el.removeEventListener("pointerleave", onLeave);
     };
-  }, [pauseOnHover, cycleSeconds, reduce, progress, loopMode]);
+  }, [pauseOnHover, cycleSeconds, reduce, progress]);
 
   // points: exact mapping to timeline so we land on total at the end of the cycle
   const pointsCovered = Math.max(
@@ -184,30 +192,42 @@ export default function PhoenixCalibrationAnimation({
           {liveLabel}
         </div>
 
-        <ToleranceSearchFunnel
-          levels={levels}
-          progressMV={smooth}
-          falloffSigma={0.9}
-          interactiveScrub={interactiveScrub && !reduce}
-          onScrub={(r) => progress.set(r)}
-          ariaLabel="Tolerance search levels"
-          ariaDescription="Hierarchical levels from rules to guided web."
-        />
+        <motion.div
+          initial={{ opacity: 1, y: 0 }}
+          animate={{ opacity: fading ? 0 : 1, y: fading ? 8 : 0 }}
+          transition={{ duration: 0.32, ease: "easeOut" }}
+        >
+          <ToleranceSearchFunnel
+            levels={levels}
+            progressMV={smooth}
+            falloffSigma={0.9}
+            interactiveScrub={interactiveScrub && !reduce}
+            onScrub={(r) => progress.set(r)}
+            ariaLabel="Tolerance search levels"
+            ariaDescription="Hierarchical levels from rules to guided web."
+          />
+        </motion.div>
 
-        <ToleranceWorkflow
-          steps={steps}
-          progressRatio={ratio}
-          progressMV={smoothRatio}
-          pointsTotal={totalMeasurePoints}
-          pointsCovered={pointsCovered}
-          spinner
-          ariaHidden
-          loop={false}
-          showChecklist={showChecklist}
-          checklistItems={["Specs located", "Ranges verified", "Report prepared"]}
-          height={270}
-          top={92}
-        />
+        <motion.div
+          initial={{ opacity: 1, y: 0 }}
+          animate={{ opacity: fading ? 0 : 1, y: fading ? 8 : 0 }}
+          transition={{ duration: 0.32, ease: "easeOut" }}
+        >
+          <ToleranceWorkflow
+            steps={steps}
+            progressRatio={ratio}
+            progressMV={smoothRatio}
+            pointsTotal={totalMeasurePoints}
+            pointsCovered={pointsCovered}
+            spinner
+            ariaHidden
+            loop={false}
+            showChecklist={showChecklist}
+            checklistItems={["Specs located", "Ranges verified", "Report prepared"]}
+            height={270}
+            top={92}
+          />
+        </motion.div>
       </div>
     </MotionConfig>
   );

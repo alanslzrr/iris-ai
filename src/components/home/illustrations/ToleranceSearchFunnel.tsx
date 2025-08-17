@@ -261,8 +261,16 @@ export default memo(function ToleranceSearchFunnel({
                 vectorEffect="non-scaling-stroke"
                 pointerEvents="none"
                 style={{ filter: "drop-shadow(0 0 6px rgba(255,235,59,0.35))" }}
+                transition={{ type: "spring", stiffness: 240, damping: 32, mass: 0.6 }}
               />
-              <motion.circle r={4} cx={spineX} cy={yMV as any} fill="#ffeb3b" pointerEvents="none" />
+              <motion.circle
+                r={4}
+                cx={spineX}
+                cy={yMV as any}
+                fill="#ffeb3b"
+                pointerEvents="none"
+                transition={{ type: "spring", stiffness: 240, damping: 32, mass: 0.6 }}
+              />
             </>
           );
         })()}
