@@ -2,7 +2,7 @@
 import { ResultsDisplay } from '@/components/dashboard/report-viewer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { ArrowLeft, RefreshCw, FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -18,6 +18,7 @@ export default function ReportViewerPage({ params }: ReportViewerPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [certNo, setCertNo] = useState<string>('');
+  const [reportUrl, setReportUrl] = useState<string | null>(null);
 
   // Initialize certNo from params
   useEffect(() => {
@@ -40,11 +41,14 @@ export default function ReportViewerPage({ params }: ReportViewerPageProps) {
       
       if (data.success && data.json_data) {
         setResultsData(data.json_data);
+        setReportUrl(data.certificate_info?.report_url || null);
       } else {
         setError(data.error || 'Failed to load certificate validation results');
+        setReportUrl(null);
       }
     } catch (err) {
       setError('Failed to fetch certificate data');
+      setReportUrl(null);
       console.error('Error fetching certificate data:', err);
     } finally {
       setLoading(false);
@@ -66,6 +70,12 @@ export default function ReportViewerPage({ params }: ReportViewerPageProps) {
     fetchCertificateData();
   };
 
+  const handleOpenPdf = () => {
+    if (reportUrl) {
+      window.open(reportUrl, '_blank', 'noopener');
+    }
+  };
+
   return (
     <div className="@container/main flex flex-1 flex-col">
       <div className="space-y-6 py-4 md:py-6 px-4 lg:px-6">
@@ -75,10 +85,16 @@ export default function ReportViewerPage({ params }: ReportViewerPageProps) {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Report Viewer
           </Button>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleOpenPdf} disabled={!reportUrl}>
+              <FileText className="h-4 w-4 mr-2" />
+              View PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
         
         {/* Loading State */}

@@ -4,7 +4,7 @@ import { ResultsDisplay } from '@/components/dashboard/report-viewer';
 import { CertificateSelector } from '@/components/dashboard/report-viewer/components/CertificateSelector';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { ArrowLeft, RefreshCw, FileText } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function ReportViewerMainPage() {
@@ -12,6 +12,7 @@ export default function ReportViewerMainPage() {
   const [resultsData, setResultsData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reportUrl, setReportUrl] = useState<string | null>(null);
 
   const fetchCertificateData = async (certNo: string) => {
     try {
@@ -23,13 +24,16 @@ export default function ReportViewerMainPage() {
       
       if (data.success && data.json_data) {
         setResultsData(data.json_data);
+        setReportUrl(data.certificate_info?.report_url || null);
       } else {
         setError(data.error || 'Failed to load certificate validation results');
         setResultsData(null);
+        setReportUrl(null);
       }
     } catch (err) {
       setError('Failed to fetch certificate data');
       setResultsData(null);
+      setReportUrl(null);
       console.error('Error fetching certificate data:', err);
     } finally {
       setLoading(false);
@@ -48,12 +52,19 @@ export default function ReportViewerMainPage() {
     setSelectedCertNo(null);
     setResultsData(null);
     setError(null);
+    setReportUrl(null);
     window.history.pushState({}, '', '/dashboard/report-viewer');
   };
 
   const handleRefresh = () => {
     if (selectedCertNo) {
       fetchCertificateData(selectedCertNo);
+    }
+  };
+
+  const handleOpenPdf = () => {
+    if (reportUrl) {
+      window.open(reportUrl, '_blank', 'noopener');
     }
   };
 
@@ -80,10 +91,16 @@ export default function ReportViewerMainPage() {
                 Back to Selection
               </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleOpenPdf} disabled={!reportUrl}>
+                <FileText className="h-4 w-4 mr-2" />
+                View PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
         )}
 

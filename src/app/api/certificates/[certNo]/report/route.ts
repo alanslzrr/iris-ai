@@ -76,7 +76,8 @@ export async function GET(
         manufacturer: certificate.manufacturer,
         model: certificate.model,
         equipment_type: certificate.equipment_type,
-        customer_name: certificate.customer_name
+        customer_name: certificate.customer_name,
+        report_url: certificate.report_url ?? null
       }
     });
 
