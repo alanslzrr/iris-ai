@@ -17,7 +17,7 @@ export default function OrchestratorV2() {
               padding="24"
               background="neutral-alpha-weak"
               border="neutral-alpha-medium"
-              style={{ background: 'rgba(0,0,0,0.28)', border: '1px solid rgba(255,255,255,0.08)' }}
+              style={{ background: 'rgba(0,0,0,0.12)', border: '1px solid rgba(255,255,255,0.08)' }}
             >
               <BatchOrchestrator className="w-full h-[280px]" />
             </Card>

@@ -5,28 +5,17 @@ import { Column, Text, Badge, Row } from "@once-ui-system/core";
 import { containerStagger, fadeInUp } from "../../motion/variants";
 import { motion } from "framer-motion";
 import { servicesContent } from "@/constants/services";
-import { ListChecks, Gauge, Sigma } from "lucide-react";
 import RequirementsFlow from "../../illustrations/RequirementsFlow";
 import PhoenixCalibrationAnimation from "../../illustrations/PhoenixCalibrationAnimation";
 import CmcPipeline from "../../illustrations/CmcPipeline";
 
-const serviceIconById = {
-  requirements: <ListChecks className="w-5 h-5" />,
-  tolerance: <Gauge className="w-5 h-5" />,
-  cmc: <Sigma className="w-5 h-5" />,
-};
 
 function StepNum({ n }: { n: number }) {
-  // Subtle hero-style gradient only on the numeral
+  // Minimal, professional step badge: neutral bg, subtle border, tabular numerals
   return (
     <span
-      className="mt-[1px] inline-block min-w-[1.6ch] text-[12px] font-semibold leading-5"
-      style={{
-        backgroundImage:
-          "linear-gradient(90deg,#f44336 0%,#ff9800 60%,#ffeb3b 100%)",
-        WebkitBackgroundClip: "text",
-        color: "transparent",
-      }}
+      className="inline-flex h-6 min-w-6 items-center justify-center rounded-md border border-white/10 bg-white/[0.03] px-1 text-[11px] font-medium leading-[22px] text-white/80 tabular-nums"
+      aria-label={`Step ${n}`}
     >
       {String(n).padStart(2, "0")}
     </span>
@@ -86,17 +75,14 @@ export default function ServicesV3() {
               >
                 {/* Info — TEXT ONLY (no backgrounds, borders, or chips) */}
                 <div className={`order-1 ${infoFirst ? "lg:order-1" : "lg:order-2"}`}>
-                  <div className="space-y-4">
-                    {/* Title */}
-                    <div className="flex items-center gap-2">
-                      {serviceIconById[service.id]}
-                      <h3
-                        id={`${service.id}-title`}
-                        className="text-[18px] font-semibold text-white"
-                      >
-                        {service.title}
-                      </h3>
-                    </div>
+                  <div className="space-y-2 max-w-[620px] xl:max-w-[660px]">
+                    {/* Title — larger, white text with report-viewer style gradient underline (no icon) */}
+                    <h3
+                      id={`${service.id}-title`}
+                      className="underline-phoenix underline-phoenix--fit underline-phoenix--tightest text-[24px] font-semibold text-white"
+                    >
+                      {service.title}
+                    </h3>
 
                     {/* Tagline */}
                     <p className="text-sm leading-6 text-white/70 max-w-prose">
@@ -104,7 +90,7 @@ export default function ServicesV3() {
                     </p>
 
                     {/* Highlights — simple bullets */}
-                    <ul className="list-disc pl-5 marker:text-white/50 space-y-1.5">
+                    <ul className="list-disc pl-5 marker:text-white/50 space-y-1.5 mt-3">
                       {service.bullets.map((b) => (
                         <li key={b} className="text-sm leading-6 text-white/75">
                           {b}
@@ -113,7 +99,7 @@ export default function ServicesV3() {
                     </ul>
 
                     {/* Sections */}
-                    <div className="space-y-8">
+                    <div className="space-y-8 mt-6">
                       {/* Process: How it works / Pipeline → numbered list */}
                       {service.sections
                         .filter((s) => /how it works|pipeline/i.test(s.heading))
@@ -149,9 +135,9 @@ export default function ServicesV3() {
                             <h4 className="text-[15px] font-semibold text-white">
                               {sec.heading}
                             </h4>
-                            <ul className="space-y-2">
+                            <ul className="space-y-2 md:space-y-0 md:flex md:flex-wrap md:gap-x-10 md:gap-y-2">
                               {sec.items.map((it) => (
-                                <li key={it} className="flex gap-2">
+                                <li key={it} className="flex items-center gap-2">
                                   <span aria-hidden className="text-[#8bc34a]">✓</span>
                                   <span className="text-sm leading-6 text-white/80">
                                     {it}

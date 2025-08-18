@@ -9,6 +9,7 @@ export function BuiltUsingTools() {
     { src: '/assets/icons/logo/supabase-logo.svg', alt: 'Supabase logo', width: 150, height: 32 },
     { src: '/assets/icons/logo/nextjs-logo.svg', alt: 'Next.js logo', width: 120, height: 24 },
     { src: '/assets/icons/logo/shadcn-logo.svg', alt: 'Shadcn logo', width: 137, height: 32 },
+    { src: '/assets/icons/logo/openai-logo.svg', alt: 'OpenAI logo', width: 137, height: 32 },
   ];
 
   return (

@@ -122,6 +122,10 @@
   /* Phoenix solid brand red (for non-gradient use) */
   --phoenix-red: #f44336; /* Material Red 500 – brand */
   --phoenix-red-foreground: #ffffff;
+  /* Additional brand token for gradient end color */
+  --phoenix-orange: #ff9800; /* matches linear gradient end */
+  /* HSL triplet for muted gray when using hsl(var(--...)/alpha) */
+  --muted-foreground-hsl: 215 14% 68%;
 }
 
 .dark {
@@ -218,17 +222,52 @@
   /* Gradient underline utility for section titles */
   .underline-phoenix {
     position: relative;
-    padding-bottom: 0.5rem; /* pb-2 */
+    display: inline-block;
+    padding-bottom: 0.5rem;
+    --thickness: 1px;
+    /* control points */
+    --brand-stop: 78%;
+    --seam: 4%;
   }
+
   .underline-phoenix::after {
     content: "";
     position: absolute;
-    left: 0;
-    bottom: 0;
-    height: 3px;
-    width: 192px; /* w-48 */
-    background-image: var(--phoenix-gradient-linear);
-    border-radius: 9999px;
+    inset-block-end: 0;
+    inset-inline-start: 0;
+    inline-size: clamp(720px, 60vw, 1200px);
+    block-size: var(--thickness);
+    /* single gradient: brand red→orange, then orange→soft gray→transparent */
+    background: linear-gradient(
+      90deg,
+      var(--phoenix-red) 0%,
+      var(--phoenix-orange) var(--brand-stop),
+      hsl(var(--muted-foreground-hsl) / 0.18) calc(var(--brand-stop) + var(--seam)),
+      hsl(var(--muted-foreground-hsl) / 0.32) 96%,
+      hsl(var(--muted-foreground-hsl) / 0) 100%
+    );
+    border-radius: 0;
+    pointer-events: none;
+  }
+
+  /* Narrow variant for contexts where a shorter underline is needed */
+  .underline-phoenix.underline-phoenix--narrow::after {
+    inline-size: 80px; /* much shorter; does not affect global variant */
+  }
+
+  /* Tight variant to reduce gap between text and underline */
+  .underline-phoenix.underline-phoenix--tight {
+    padding-bottom: 0.25rem; /* closer to the text */
+  }
+
+  /* Fit variant: make underline match text width exactly */
+  .underline-phoenix.underline-phoenix--fit::after {
+    inline-size: 100%;
+  }
+
+  /* Tightest spacing variant */
+  .underline-phoenix.underline-phoenix--tightest {
+    padding-bottom: 0.125rem; /* ~2px */
   }
   [data-theme-preset]:not([data-theme-preset="default"]) .shadow-2xs {
     box-shadow: var(--shadow-2xs);
@@ -308,7 +347,7 @@
 }
 
 .rv-typography :where(p) {
-  @apply my-3 text-[0.98rem] leading-7; /* normal weight for body */
+  @apply my-2 text-[0.98rem] leading-6; /* slightly tighter line height and spacing */
 }
 
 .rv-typography :where(h1) {

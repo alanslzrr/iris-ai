@@ -15,7 +15,7 @@ export type ServiceContent = {
 export const servicesContent: ServiceContent[] = [
   {
     id: 'requirements',
-    title: 'Certificate Requirements',
+    title: 'Requirements verification',
     tagline:
       'Auto‑verify certificates against technical, regulatory and client rules — fast and auditable.',
     bullets: [

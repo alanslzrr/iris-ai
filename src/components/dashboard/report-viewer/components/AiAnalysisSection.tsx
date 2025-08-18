@@ -10,6 +10,71 @@ interface AiAnalysisSectionProps {
 }
 
 export function AiAnalysisSection({ results }: AiAnalysisSectionProps) {
+  const formatAnalysisText = (text: string): string => {
+    if (!text) return '';
+
+    const sectionLabels = [
+      'Key findings',
+      'Requirements',
+      'Measurement uncertainty',
+      'Measurements',
+      'Tolerance checks',
+      'Tolerance',
+      'Tolerance/measurement verification',
+      'Unverified points',
+      'CMC/validation',
+      'CMC',
+      'Traceability',
+      'CMC traceability',
+      'Overall',
+      'Agreements',
+      'Contradictions/limitations',
+      'Skipped/not-verifiable checks',
+      'Document non-compliance',
+      'Contradiction resolution',
+      'Impact & next steps',
+      'Impact',
+      'Aggregate'
+    ];
+
+    const escapeRegex = (s: string) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+
+    let result = text.replace(/\r\n?/g, '\n').trim();
+
+    // Remove a leading standalone "Analysis" heading if present
+    result = result.replace(/^\s*Analysis\s*\n+/i, '');
+
+    // Remove stray mid-text "Analysis" heading that sometimes appears after a period
+    result = result.replace(/([.!?])\s*Analysis\s*\n+/g, '$1\n\n');
+
+    // Normalize combined CMC+Traceability labels
+    result = result
+      .replace(/(^|\n)CMC\s*\n+\s*traceability\s*:/gi, '$1CMC traceability:')
+      .replace(/(^|\n)CMC\s*[\/&]\s*traceability\s*:/gi, '$1CMC traceability:')
+      .replace(/(^|\n)CMC\s+and\s+traceability\s*:/gi, '$1CMC traceability:');
+
+    // Insert paragraph breaks and bold labels for known sections
+    for (const label of sectionLabels) {
+      const pattern = new RegExp(`(^|[\\n.;)])\\s*(${escapeRegex(label)})\\s*:`, 'gi');
+      result = result.replace(pattern, (_m, pre, grp) => `${pre}\n\n**${grp}:**`);
+    }
+
+    // Special handling within Key findings: turn 1) ... 2) ... into an ordered list
+    const keyFindingsRegex = /\*\*Key findings:\*\*([\s\S]*?)(\n\n\*\*|$)/i;
+    result = result.replace(keyFindingsRegex, (_m, content: string, tail: string) => {
+      let sectionBody = content;
+      // Normalize number markers: 1) -> 1.
+      sectionBody = sectionBody.replace(/\s*(\d+)\)\s+/g, (mm, n) => `\n${n}. `);
+      // Bold a leading token within list items if it looks like a label before a colon
+      sectionBody = sectionBody.replace(/(?:^|\n)(\d+)\.\s+([^\n:]{2,}?):\s*/g, (_mm, n, lbl) => `\n${n}. **${lbl}:** `);
+      // Ensure each numbered item is on its own line
+      sectionBody = sectionBody.replace(/\s+(\d+)\.\s/g, (_mm, n) => `\n${n}. `);
+      return `**Key findings:**${sectionBody}${tail || ''}`;
+    });
+
+    return result;
+  };
+
   return (
     <div className="space-y-6">
       {/* AI Analysis Section */}
@@ -50,7 +115,7 @@ export function AiAnalysisSection({ results }: AiAnalysisSectionProps) {
                   <h5 className="text-sm text-muted-foreground mb-2 underline-phoenix">Analysis</h5>
                   <div className="bg-muted border border-border rounded-lg p-4 shadow-sm">
                     <SimpleMarkdown className="rv-typography">
-                      {results.openai_analysis.analysis}
+                      {formatAnalysisText(results.openai_analysis.analysis)}
                     </SimpleMarkdown>
                   </div>
                 </div>
