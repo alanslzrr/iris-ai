@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server-internal';
 import { phoenixApiService } from '@/lib/phoenix-api-service';
-import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay, addDays } from 'date-fns';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const timeRange = searchParams.get('range') || '30d';
+    const fromParam = searchParams.get('from');
+    const toParam = searchParams.get('to');
     
     const supabase = await createClient();
     
@@ -15,17 +17,37 @@ export async function GET(request: Request) {
     let days = 30;
     if (timeRange === '7d') days = 7;
     if (timeRange === '90d') days = 90;
-    
-    const startDate = startOfDay(subDays(now, days));
-    const endDate = endOfDay(now);
+
+    let startDate = startOfDay(subDays(now, days));
+    let endDate = endOfDay(now);
+
+    if (fromParam || toParam) {
+      const from = fromParam ? new Date(fromParam) : null;
+      const to = toParam ? new Date(toParam) : null;
+      if (from && !isNaN(from.getTime())) startDate = startOfDay(from);
+      if (to && !isNaN(to.getTime())) endDate = endOfDay(to);
+    }
 
     // 1.1 Volume Metrics
     const phoenixCerts = await phoenixApiService.getAllCertificates();
+    const hasValidDates = phoenixCerts.some(cert => {
+      if (!cert.LastModified) return false;
+      const d = new Date(cert.LastModified);
+      return !isNaN(d.getTime());
+    });
+    const phoenixCertsInRange = hasValidDates
+      ? phoenixCerts.filter(cert => {
+          if (!cert.LastModified) return false;
+          const d = new Date(cert.LastModified);
+          if (isNaN(d.getTime())) return false;
+          return d >= startDate && d <= endDate;
+        })
+      : phoenixCerts;
     
     // Supabase certificates (all-time) for coverage metrics
-    const { data: supabaseCerts, count: totalSupabase } = await supabase
+    const { data: supabaseCerts } = await supabase
       .from('evaluation_reports')
-      .select('cert_no, created_at', { count: 'exact' });
+      .select('cert_no, created_at');
 
     // Supabase certificates within the selected time range for daily averages
     const { data: supabaseCertsInRange } = await supabase
@@ -34,6 +56,7 @@ export async function GET(request: Request) {
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString());
 
+    // Use all-time data for overall coverage metrics to avoid zeros from date filtering
     const coverage = phoenixApiService.calculateProcessingCoverage(phoenixCerts, supabaseCerts || []);
 
     // 1.2 Processing Coverage Chart Data
@@ -53,9 +76,10 @@ export async function GET(request: Request) {
     // 1.3 Daily Coverage Evolution
     const dailyData: Record<string, { phoenixCount: number; supabaseCount: number; rate: number }> = {};
     
-    // Initialize all dates in range
-    for (let i = 0; i < days; i++) {
-      const date = format(subDays(now, days - 1 - i), 'yyyy-MM-dd');
+    // Initialize all dates in selected range
+    const effectiveDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    for (let i = 0; i < effectiveDays; i++) {
+      const date = format(addDays(startDate, i), 'yyyy-MM-dd');
       dailyData[date] = { phoenixCount: 0, supabaseCount: 0, rate: 0 };
     }
 
@@ -94,7 +118,7 @@ export async function GET(request: Request) {
 
     // Calculate Supabase-only average daily processed for the selected range
     const totalEvaluatedInRange = (supabaseCertsInRange?.length || 0);
-    const averageDailyProcessed = Math.round((totalEvaluatedInRange / days) * 10) / 10;
+    const averageDailyProcessed = Math.round((totalEvaluatedInRange / effectiveDays) * 10) / 10;
 
     return NextResponse.json({
       success: true,

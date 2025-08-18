@@ -17,6 +17,7 @@ import {
   Database,
   RefreshCw
 } from "lucide-react";
+import type { DateRange } from 'react-day-picker';
 
 interface MetricCardProps {
   title: string;
@@ -98,7 +99,11 @@ interface Panel1Data {
   };
 }
 
-export function ModernMetricsCards() {
+interface ModernMetricsCardsProps {
+  dateRange?: DateRange;
+}
+
+export function ModernMetricsCards({ dateRange }: ModernMetricsCardsProps) {
   const [panel1Data, setPanel1Data] = useState<Panel1Data | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +114,12 @@ export function ModernMetricsCards() {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/dashboard/panel1-integration?range=30d');
+      const params = new URLSearchParams();
+      if (dateRange?.from) params.set('from', new Date(dateRange.from).toISOString());
+      if (dateRange?.to) params.set('to', new Date(dateRange.to).toISOString());
+      if (!dateRange?.from && !dateRange?.to) params.set('range', '30d');
+      const query = params.toString();
+      const response = await fetch(`/api/dashboard/panel1-integration${query ? `?${query}` : ''}`);
       const data = await response.json();
       
       if (data.success) {
@@ -127,7 +137,8 @@ export function ModernMetricsCards() {
 
   useEffect(() => {
     fetchPanel1Data();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange?.from?.toString(), dateRange?.to?.toString()]);
 
   if (loading) {
     return (
@@ -184,7 +195,15 @@ export function ModernMetricsCards() {
     ? "Certificates evaluated that are Live"
     : "Certificates evaluated";
 
-  const rateDescription = `${panel1Data.volume.matching} matched, ${panel1Data.volume.pendingProcessing} pending`;
+  const rangeLabel = ((): string => {
+    if (dateRange?.from && dateRange?.to) return 'in range';
+    if (dateRange?.from && !dateRange?.to) return 'from selected date';
+    return 'overall';
+  })();
+
+  const rateDescription = `${panel1Data.volume.matching} matched, ${panel1Data.volume.pendingProcessing} pending (${rangeLabel})`;
+
+  const averageBadgeText = dateRange?.from || dateRange?.to ? 'in-range avg' : '30-day avg';
 
   const metrics = [
     {
@@ -217,7 +236,7 @@ export function ModernMetricsCards() {
       description: "Average daily processed by Iris AI",
       icon: BarChart3,
       badge: { 
-        text: "30-day avg", 
+        text: averageBadgeText, 
         variant: "outline" as const 
       }
     }

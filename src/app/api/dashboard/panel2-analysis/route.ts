@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server-internal';
+import { phoenixApiService } from '@/lib/phoenix-api-service';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const timeRange = searchParams.get('range') || '30d';
+    const liveParam = searchParams.get('live');
+    const liveOnly = liveParam === '1' || liveParam === 'true';
     
     const supabase = await createClient();
     
@@ -36,7 +39,15 @@ export async function GET(request: Request) {
 
     if (error) throw error;
 
-    const reports = evaluationReports || [];
+    let reports = evaluationReports || [];
+
+    // Optional: filter to Live certificates only (present in Phoenix)
+    if (liveOnly) {
+      const phoenixCerts = await phoenixApiService.getAllCertificates();
+      const normalize = (s: string) => (s || '').toString().trim().toUpperCase();
+      const liveSet = new Set<string>(phoenixCerts.map(c => normalize((c as any).CertNo)));
+      reports = reports.filter(r => liveSet.has(normalize(r.cert_no)));
+    }
 
     // 2.1 Status Distribution
     const statusCounts = reports.reduce((acc: Record<string, number>, report) => {

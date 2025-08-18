@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Separator } from "@/components/ui/separator";
 
 // removed header icons and refresh imports
@@ -8,9 +9,11 @@ import { ModernMetricsCards } from "./components/modern-metrics-cards";
 import Link from "next/link";
 import { ProcessingTimelineOverview } from "./components/processing-timeline-overview";
 import { ModernDataTable } from "./components/modern-data-table";
+import type { DateRange } from "react-day-picker";
 
 export function ModernDashboardLanding() {
   // Page-level refresh moved to global header
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   return (
     <div className="@container/main flex flex-1 flex-col">
@@ -19,7 +22,7 @@ export function ModernDashboardLanding() {
 
       {/* Integration metrics (section title removed) */}
       <div className="space-y-4">
-        <ModernMetricsCards />
+        <ModernMetricsCards dateRange={dateRange} />
       </div>
 
       <Separator className="my-4 md:my-6" />
@@ -38,7 +41,7 @@ export function ModernDashboardLanding() {
 
       {/* Recent Activity Table (section title removed) */}
       <div className="space-y-4">
-        <ModernDataTable />
+        <ModernDataTable dateRange={dateRange} onDateRangeChange={setDateRange} />
       </div>
       </div>
     </div>

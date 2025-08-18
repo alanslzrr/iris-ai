@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -72,7 +72,12 @@ const statusConfig = {
   },
 };
 
-export function ModernDataTable() {
+interface ModernDataTableProps {
+  dateRange?: DateRange;
+  onDateRangeChange?: (range: DateRange | undefined) => void;
+}
+
+export function ModernDataTable({ dateRange: controlledDateRange, onDateRangeChange }: ModernDataTableProps) {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [filteredCertificates, setFilteredCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,8 +88,20 @@ export function ModernDataTable() {
   const [sortField, setSortField] = useState<keyof Certificate>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [liveOnly, setLiveOnly] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [uncontrolledDateRange, setUncontrolledDateRange] = useState<DateRange | undefined>();
   const [hoveredDate, setHoveredDate] = useState<Date | undefined>();
+  const dateRange = useMemo(() => (
+    typeof onDateRangeChange === 'function' ? controlledDateRange : uncontrolledDateRange
+  ), [controlledDateRange, uncontrolledDateRange, onDateRangeChange]);
+
+  const setDateRange = (range: DateRange | undefined) => {
+    if (typeof onDateRangeChange === 'function') {
+      onDateRangeChange(range);
+    } else {
+      setUncontrolledDateRange(range);
+    }
+  };
+
   const { set: phoenixSet, loading: liveLoading } = usePhoenixLiveSet();
   const { set: validatedSet } = useValidatedCertNos();
   

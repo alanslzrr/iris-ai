@@ -41,6 +41,8 @@ import {
 } from "recharts";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Switch } from "@/components/ui/switch";
+import { usePhoenixLiveSet } from "@/hooks/usePhoenixLiveSet";
 
 type CriteriaCounts = { PASS: number; FAIL: number; UNKNOWN: number };
 
@@ -94,6 +96,8 @@ export default function AnalyticsOverview() {
   );
   const isMobile = useIsMobile();
   const abortRef = useRef<AbortController | null>(null);
+  const [liveOnly, setLiveOnly] = useState(false);
+  const { set: phoenixSet } = usePhoenixLiveSet();
 
   useEffect(() => {
     if (isMobile) setTimeRange("7d");
@@ -110,7 +114,8 @@ export default function AnalyticsOverview() {
         const controller = new AbortController();
         abortRef.current = controller;
 
-        const res = await fetch(`/api/dashboard/panel2-analysis?range=${encodeURIComponent(timeRange)}`,
+        const liveQuery = liveOnly ? `&live=1` : '';
+        const res = await fetch(`/api/dashboard/panel2-analysis?range=${encodeURIComponent(timeRange)}${liveQuery}`,
           { signal: controller.signal });
         const json = await res.json();
         if (json.success) {
@@ -129,7 +134,7 @@ export default function AnalyticsOverview() {
     };
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeRange, reloadKey]);
+  }, [timeRange, reloadKey, liveOnly]);
 
   const kpiItems = useMemo(() => {
     if (!data) return [] as Array<{ label: string; value: string; help?: string }>;
@@ -297,9 +302,13 @@ export default function AnalyticsOverview() {
     <div className="flex flex-1 flex-col">
       <div className="flex flex-col gap-2 py-4 md:gap-3 md:py-6">
         <div className="flex items-center justify-between px-2 md:px-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <CardTitle>Analytics</CardTitle>
             {fetching && <Badge variant="secondary" className="ml-1">Updating…</Badge>}
+            <div className="ml-2 flex items-center gap-2">
+              <Switch checked={liveOnly} onCheckedChange={setLiveOnly} />
+              <span className="text-sm text-muted-foreground">Live{liveOnly && !phoenixSet ? ' (loading...)' : ''}</span>
+            </div>
           </div>
           <ToggleGroup type="single" value={timeRange} onValueChange={(v) => v && setTimeRange(v)} className="hidden sm:flex">
             <ToggleGroupItem value="7d" aria-label="Last 7 days">7d</ToggleGroupItem>
