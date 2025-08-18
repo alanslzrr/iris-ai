@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { 
   TrendingUp, 
@@ -100,6 +102,7 @@ export function ModernMetricsCards() {
   const [panel1Data, setPanel1Data] = useState<Panel1Data | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [liveOnly, setLiveOnly] = useState(false);
 
   const fetchPanel1Data = async () => {
     try {
@@ -173,6 +176,16 @@ export function ModernMetricsCards() {
 
   if (!panel1Data) return null;
 
+  const processedValue = liveOnly
+    ? panel1Data.volume.matching
+    : panel1Data.volume.totalSupabase;
+
+  const processedDescription = liveOnly
+    ? "Certificates evaluated that are Live"
+    : "Certificates evaluated";
+
+  const rateDescription = `${panel1Data.volume.matching} matched, ${panel1Data.volume.pendingProcessing} pending`;
+
   const metrics = [
     {
       title: "Phoenix Certificates",
@@ -183,15 +196,15 @@ export function ModernMetricsCards() {
     },
     {
       title: "Processed Certificates",
-      value: panel1Data.volume.totalSupabase.toLocaleString(),
-      description: "Certificates processed in Supabase",
+      value: processedValue.toLocaleString(),
+      description: processedDescription,
       icon: FileText,
       badge: { text: "Evaluated", variant: "secondary" as const }
     },
     {
       title: "Processing Rate",
       value: `${panel1Data.processingCoverage.rate}%`,
-      description: `${panel1Data.volume.matching} matched, ${panel1Data.volume.pendingProcessing} pending`,
+      description: rateDescription,
       icon: Activity,
       badge: { 
         text: panel1Data.processingCoverage.rate > 80 ? "Good" : "Needs Attention", 
@@ -212,6 +225,19 @@ export function ModernMetricsCards() {
 
   return (
     <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+      <div className="@xl/main:col-span-2 @5xl/main:col-span-4 flex justify-end">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-2 cursor-help">
+              <Switch checked={liveOnly} onCheckedChange={setLiveOnly} />
+              <span className="text-sm text-muted-foreground">Live</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top" sideOffset={8}>
+            <p>On: show metrics for certificates currently present in Phoenix (Live). Off: show overall metrics.</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
       {metrics.map((metric, index) => (
         <MetricCard
           key={index}

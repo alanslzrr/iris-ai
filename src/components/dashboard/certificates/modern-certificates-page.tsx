@@ -31,6 +31,8 @@ import {
 import { format } from 'date-fns';
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { useState, useEffect } from 'react';
+import { usePhoenixLiveSet } from "@/hooks/usePhoenixLiveSet";
+import { useValidatedCertNos } from "@/hooks/useValidatedCertNos";
 
 interface Certificate {
   cert_no: string;
@@ -85,6 +87,9 @@ export function ModernCertificatesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showPendingOnly, setShowPendingOnly] = useState(false);
+  const [liveOnly, setLiveOnly] = useState(false);
+  const { set: phoenixSet } = usePhoenixLiveSet();
+  const { set: validatedSet } = useValidatedCertNos();
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<keyof Certificate>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -122,6 +127,8 @@ export function ModernCertificatesPage() {
     fetchCertificates();
   }, []);
 
+  // Phoenix set is prefetched by hook; toggling Live applies intersection immediately when available
+
   useEffect(() => {
     let filtered = certificates;
 
@@ -141,30 +148,29 @@ export function ModernCertificatesPage() {
       filtered = filtered.filter(cert => cert.overall_status === statusFilter);
     }
 
-    // Apply pending-only filter by removing those that appear in validated_reports
-    // We'll fetch validated cert_nos and filter locally
-    const applyPendingFilter = async () => {
+    // Apply pending-only filter using cached validated set
+    const applyPendingFilter = () => {
       if (!showPendingOnly) {
         finalize(filtered);
         return;
       }
-      try {
-        const res = await fetch('/api/validation/cert-nos');
-        const json = await res.json();
-        if (res.ok && json.success) {
-          const normalize = (s: string) => (s || '').toString().trim().toUpperCase();
-          const validated = new Set<string>((json.certNos || []).map((s: string) => normalize(s)));
-          const pending = filtered.filter(cert => !validated.has(normalize(cert.cert_no)));
-          finalize(pending);
-        } else {
-          finalize(filtered);
-        }
-      } catch {
+      const normalize = (s: string) => (s || '').toString().trim().toUpperCase();
+      if (validatedSet) {
+        const pending = filtered.filter(cert => !validatedSet.has(normalize(cert.cert_no)));
+        finalize(pending);
+      } else {
+        // Validated set not ready; keep current filtered list, sorting applied below
         finalize(filtered);
       }
     };
 
     const finalize = (arr: typeof certificates) => {
+      // Apply Live intersection if enabled
+      if (liveOnly && phoenixSet) {
+        const normalize = (s: string) => (s || '').toString().trim().toUpperCase();
+        const intersected = arr.filter(c => phoenixSet.has(normalize(c.cert_no)));
+        arr = intersected;
+      }
       // Apply sorting
       arr.sort((a, b) => {
         const aValue = a[sortField];
@@ -181,7 +187,7 @@ export function ModernCertificatesPage() {
     };
 
     applyPendingFilter();
-  }, [certificates, searchTerm, statusFilter, sortField, sortDirection, showPendingOnly]);
+  }, [certificates, searchTerm, statusFilter, sortField, sortDirection, showPendingOnly, liveOnly, phoenixSet]);
 
   const handleSort = (field: keyof Certificate) => {
     if (sortField === field) {
@@ -346,10 +352,28 @@ export function ModernCertificatesPage() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Switch checked={showPendingOnly} onCheckedChange={setShowPendingOnly} />
-                <span className="text-sm text-muted-foreground">Pending Review</span>
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2 cursor-help">
+                    <Switch checked={showPendingOnly} onCheckedChange={setShowPendingOnly} />
+                    <span className="text-sm text-muted-foreground">Pending Review</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={8}>
+                  <p>On: hide certificates already validated. Off: show all evaluated certificates.</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2 cursor-help">
+                    <Switch checked={liveOnly} onCheckedChange={setLiveOnly} />
+                    <span className="text-sm text-muted-foreground">Live</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={8}>
+                  <p>On: show only certificates present in Phoenix (Live) and evaluated. Off: show full history.</p>
+                </TooltipContent>
+              </Tooltip>
               <Button variant="outline" size="sm">
                 <Download className="mr-2 h-4 w-4" />
                 Export

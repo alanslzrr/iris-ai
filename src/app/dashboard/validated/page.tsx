@@ -11,6 +11,9 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { DataTableColumnHeader } from '@/components/ui/data-table-column-header';
 import { CheckCircle, AlertTriangle, Search, RefreshCw, ArrowLeft, ArrowRight, Eye } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { usePhoenixLiveSet } from '@/hooks/usePhoenixLiveSet';
 
 type ValidationStatus = 'APPROVED' | 'REJECTED';
 
@@ -37,6 +40,8 @@ export default function ValidatedPage() {
   const [sortField, setSortField] = useState<keyof ValidatedRecord>('approved_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const pageSize = 25;
+  const [liveOnly, setLiveOnly] = useState(false);
+  const { set: phoenixSet, loading: liveLoading } = usePhoenixLiveSet();
 
   const fetchValidated = async () => {
     try {
@@ -69,8 +74,15 @@ export default function ValidatedPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, currentPage, searchTerm]);
 
+  // Phoenix set is prefetched globally via hook cache for snappy toggling
+
+  // Client-side filter by Live intersection
+  const liveFilteredRows = liveOnly && phoenixSet
+    ? records.filter(r => phoenixSet.has(r.cert_no))
+    : records;
+
   const filteredAndSorted = useMemo(() => {
-    const result = [...records];
+    const result = [...liveFilteredRows];
 
     // Sort current page items
     result.sort((a, b) => {
@@ -86,7 +98,7 @@ export default function ValidatedPage() {
       return sortDirection === 'asc' ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr);
     });
     return result;
-  }, [records, sortField, sortDirection]);
+  }, [liveFilteredRows, sortField, sortDirection]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const startIndex = (currentPage - 1) * pageSize;
@@ -186,6 +198,17 @@ export default function ValidatedPage() {
                 />
               </div>
               <div className="flex items-center gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2 mr-2 cursor-help">
+                      <Switch checked={liveOnly} onCheckedChange={setLiveOnly} />
+                      <span className="text-sm text-muted-foreground">Live{liveOnly && !phoenixSet ? ' (loading...)' : ''}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" sideOffset={8}>
+                    <p>On: show only validations for certificates still present in Phoenix (Live). Off: show all validations.</p>
+                  </TooltipContent>
+                </Tooltip>
                 <Button
                   variant={statusFilter === 'all' ? 'default' : 'outline'}
                   size="sm"

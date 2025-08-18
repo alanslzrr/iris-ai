@@ -10,6 +10,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { Search, Calendar, Building, Wrench, CheckCircle, AlertTriangle, Clock, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { usePhoenixLiveSet } from '@/hooks/usePhoenixLiveSet';
+import { useValidatedCertNos } from '@/hooks/useValidatedCertNos';
 
 interface Certificate {
   cert_no: string;
@@ -39,6 +41,9 @@ export function CertificateSelector({ onCertificateSelect, selectedCertNo }: Cer
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showPendingOnly, setShowPendingOnly] = useState(false);
+  const { set: validatedSet } = useValidatedCertNos();
+  const [liveOnly, setLiveOnly] = useState(false);
+  const { set: phoenixSet, loading: liveLoading } = usePhoenixLiveSet();
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<keyof Certificate>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -81,25 +86,17 @@ export function CertificateSelector({ onCertificateSelect, selectedCertNo }: Cer
     return matchesSearch && matchesStatus;
   });
 
-  // Apply Pending Review switch by removing certs that are validated
-  // We do this fetch client-side to keep implementation simple
-  const [validatedSet, setValidatedSet] = useState<Set<string> | null>(null);
-  useEffect(() => {
-    if (!showPendingOnly) return setValidatedSet(null);
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/validation/cert-nos');
-        const json = await res.json();
-        if (!cancelled && res.ok && json.success) {
-          setValidatedSet(new Set<string>(json.certNos || []));
-        }
-      } catch {
-        if (!cancelled) setValidatedSet(new Set());
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [showPendingOnly]);
+  // Apply Pending Review switch by removing certs that are validated using cached set
+  const normalized = (s: string) => (s || '').toString().trim().toUpperCase();
+  if (showPendingOnly && validatedSet) {
+    filteredCertificates = filteredCertificates.filter(c => !validatedSet.has(normalized(c.cert_no)));
+  }
+
+  // Phoenix set is prefetched globally via hook cache for snappy toggling
+
+  if (liveOnly && phoenixSet) {
+    filteredCertificates = filteredCertificates.filter(c => phoenixSet.has(c.cert_no));
+  }
 
   if (showPendingOnly && validatedSet) {
     filteredCertificates = filteredCertificates.filter(c => !validatedSet.has(c.cert_no));
@@ -209,10 +206,28 @@ export function CertificateSelector({ onCertificateSelect, selectedCertNo }: Cer
             />
           </div>
           <div className="flex gap-2 items-center">
-            <div className="flex items-center gap-2 mr-2">
-              <Switch checked={showPendingOnly} onCheckedChange={setShowPendingOnly} />
-              <span className="text-sm text-muted-foreground">Pending Review</span>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 mr-2 cursor-help">
+                  <Switch checked={showPendingOnly} onCheckedChange={setShowPendingOnly} />
+                  <span className="text-sm text-muted-foreground">Pending Review</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={8}>
+                <p>On: hide certificates already validated. Off: show all evaluated certificates.</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 mr-2 cursor-help">
+                  <Switch checked={liveOnly} onCheckedChange={setLiveOnly} />
+                  <span className="text-sm text-muted-foreground">Live{liveOnly && !phoenixSet ? ' (loading...)' : ''}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={8}>
+                <p>On: show only certificates present in Phoenix (Live) and evaluated. Off: show full history.</p>
+              </TooltipContent>
+            </Tooltip>
             <Button
               variant={statusFilter === 'all' ? 'default' : 'outline'}
               size="sm"

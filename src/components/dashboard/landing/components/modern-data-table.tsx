@@ -6,6 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { usePhoenixLiveSet } from "@/hooks/usePhoenixLiveSet";
+import { useValidatedCertNos } from "@/hooks/useValidatedCertNos";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { 
@@ -19,6 +24,8 @@ import {
   ArrowRight
 } from "lucide-react";
 import { format } from 'date-fns';
+import { Calendar as CalendarIcon } from "lucide-react";
+import { DateRange } from 'react-day-picker';
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 
 interface Certificate {
@@ -75,6 +82,11 @@ export function ModernDataTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<keyof Certificate>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [liveOnly, setLiveOnly] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [hoveredDate, setHoveredDate] = useState<Date | undefined>();
+  const { set: phoenixSet, loading: liveLoading } = usePhoenixLiveSet();
+  const { set: validatedSet } = useValidatedCertNos();
   
   const itemsPerPage = 10;
 
@@ -104,6 +116,8 @@ export function ModernDataTable() {
     fetchCertificates();
   }, []);
 
+  // Phoenix set is prefetched globally via hook cache for snappy toggling
+
   useEffect(() => {
     let filtered = certificates;
 
@@ -123,6 +137,28 @@ export function ModernDataTable() {
       filtered = filtered.filter(cert => cert.overall_status === statusFilter);
     }
 
+    // Apply date range filter (created_at)
+    if (dateRange && (dateRange.from || dateRange.to)) {
+      const start = dateRange.from ? new Date(dateRange.from) : null;
+      let end = dateRange.to ? new Date(dateRange.to) : null;
+      if (start) start.setHours(0, 0, 0, 0);
+      // If only a single day is selected, treat it as that full day
+      if (!end && start) end = new Date(start);
+      if (end) end.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(cert => {
+        const created = new Date(cert.created_at);
+        if (Number.isNaN(created.getTime())) return false;
+        if (start && created < start) return false;
+        if (end && created > end) return false;
+        return true;
+      });
+    }
+
+    // Apply Live filter by intersecting with Phoenix current certificates
+    if (liveOnly && phoenixSet) {
+      filtered = filtered.filter(cert => phoenixSet.has(cert.cert_no));
+    }
+
     // Apply sorting
     filtered.sort((a, b) => {
       const aValue = a[sortField];
@@ -139,7 +175,7 @@ export function ModernDataTable() {
 
     setFilteredCertificates(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [certificates, searchTerm, statusFilter, sortField, sortDirection]);
+  }, [certificates, searchTerm, statusFilter, dateRange, sortField, sortDirection, liveOnly, phoenixSet]);
 
   const getStatusBadge = (status: string) => {
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.PROCESSING;
@@ -241,6 +277,55 @@ export function ModernDataTable() {
               <SelectItem value="PROCESSING">Processing</SelectItem>
             </SelectContent>
           </Select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="shadow-xs justify-start">
+                <CalendarIcon className="h-4 w-4 mr-2" />
+                {dateRange?.from ? (
+                  dateRange.to ? (
+                    <span>{format(dateRange.from, 'MMM dd, yyyy')} - {format(dateRange.to, 'MMM dd, yyyy')}</span>
+                  ) : (
+                    <span>{format(dateRange.from, 'MMM dd, yyyy')}</span>
+                  )
+                ) : (
+                  <span>Date range</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <div className="p-3">
+                <Calendar
+                  mode="range"
+                  numberOfMonths={2}
+                  selected={(() => {
+                    if (dateRange?.from && !dateRange?.to && hoveredDate) {
+                      const from = dateRange.from;
+                      const to = hoveredDate;
+                      return from <= to ? { from, to } : { from: to, to: from };
+                    }
+                    return dateRange;
+                  })()}
+                  onSelect={setDateRange}
+                  onDayMouseEnter={(date) => setHoveredDate(date)}
+                  onDayMouseLeave={() => setHoveredDate(undefined)}
+                />
+                <div className="flex items-center justify-end gap-2 mt-2">
+                  <Button variant="ghost" size="sm" onClick={() => setDateRange(undefined)} disabled={!dateRange?.from && !dateRange?.to}>Clear</Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 cursor-help">
+                <Switch checked={liveOnly} onCheckedChange={setLiveOnly} />
+                <span className="text-sm text-muted-foreground">Live{liveOnly && !phoenixSet ? ' (loading...)' : ''}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={8}>
+              <p>On: show only certificates present in Phoenix (Live) and evaluated. Off: show full history.</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Table - reference styling (header row, tighter cells, muted hover) */}
