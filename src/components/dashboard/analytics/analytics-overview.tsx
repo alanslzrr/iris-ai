@@ -39,10 +39,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, RefreshCw, CheckCircle, Clock } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Switch } from "@/components/ui/switch";
 import { usePhoenixLiveSet } from "@/hooks/usePhoenixLiveSet";
+import { usePreferencesStore } from "@/stores/preferences/preferences-store";
 
 type CriteriaCounts = { PASS: number; FAIL: number; UNKNOWN: number };
 
@@ -96,8 +97,27 @@ export default function AnalyticsOverview() {
   );
   const isMobile = useIsMobile();
   const abortRef = useRef<AbortController | null>(null);
-  const [liveOnly, setLiveOnly] = useState(false);
+  const { liveOnly, setLiveOnly } = usePreferencesStore();
   const { set: phoenixSet } = usePhoenixLiveSet();
+  // Local cache to provide instant UI updates when toggling ranges or Live
+  const cacheRef = useRef<Map<string, Panel2Data>>(new Map());
+
+  const getCacheKey = (range: string, live: boolean) => `${range}|${live ? "1" : "0"}`;
+
+  const prefetchRange = async (range: string, live: boolean) => {
+    const key = getCacheKey(range, live);
+    if (cacheRef.current.has(key)) return; // already cached
+    try {
+      const liveQuery = live ? `&live=1` : '';
+      const res = await fetch(`/api/dashboard/panel2-analysis?range=${encodeURIComponent(range)}${liveQuery}`);
+      const json = await res.json();
+      if (json?.success && json?.data) {
+        cacheRef.current.set(key, json.data as Panel2Data);
+      }
+    } catch {
+      // ignore prefetch errors
+    }
+  };
 
   useEffect(() => {
     if (isMobile) setTimeRange("7d");
@@ -108,7 +128,11 @@ export default function AnalyticsOverview() {
       try {
         setError(null);
         setFetching(true);
-        if (!data) setLoading(true);
+        const key = getCacheKey(timeRange, liveOnly);
+        // If we have cached data for the target state, show it immediately for responsiveness
+        const cached = cacheRef.current.get(key);
+        if (cached) setData(cached);
+        if (!data && !cached) setLoading(true);
 
         abortRef.current?.abort();
         const controller = new AbortController();
@@ -119,7 +143,9 @@ export default function AnalyticsOverview() {
           { signal: controller.signal });
         const json = await res.json();
         if (json.success) {
-          setData(json.data as Panel2Data);
+          const fresh = json.data as Panel2Data;
+          cacheRef.current.set(key, fresh);
+          setData(fresh);
         } else {
           setError(json.error || "Failed to fetch analytics data");
         }
@@ -135,6 +161,16 @@ export default function AnalyticsOverview() {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange, reloadKey, liveOnly]);
+
+  // Warm the cache in the background for other ranges for current liveOnly setting
+  useEffect(() => {
+    const ranges = ["7d", "30d", "90d"];
+    const others = ranges.filter((r) => r !== timeRange);
+    others.forEach((r) => {
+      // Fire-and-forget prefetch; do not block UI
+      prefetchRange(r, liveOnly);
+    });
+  }, [timeRange, liveOnly]);
 
   const kpiItems = useMemo(() => {
     if (!data) return [] as Array<{ label: string; value: string; help?: string }>;
@@ -171,6 +207,10 @@ export default function AnalyticsOverview() {
       .map((d) => ({ label: d.status, count: d.count })) : []),
     [data]
   );
+
+  const passCount = data?.statusDistribution?.summary?.PASS ?? 0;
+  const failCount = data?.statusDistribution?.summary?.FAIL ?? 0;
+  const attentionCount = data?.statusDistribution?.summary?.ATTENTION ?? 0;
 
   // Derived: timeline proportion and rolling average
   const timelineDisplayData = useMemo(() => {
@@ -342,6 +382,44 @@ export default function AnalyticsOverview() {
 
         <Separator className="my-2 md:my-4" />
 
+        {/* Passed / Failed / Attention cards (respect Live filter) */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Card className="shadow-xs">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Passed</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold tabular-nums">{passCount.toLocaleString()}</div>
+              <CardDescription>Successful evaluations</CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-xs">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Failed</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold tabular-nums">{failCount.toLocaleString()}</div>
+              <CardDescription>Failed evaluations</CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-xs">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Attention</CardTitle>
+              <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold tabular-nums">{attentionCount.toLocaleString()}</div>
+              <CardDescription>Needs review</CardDescription>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Separator className="my-2 md:my-4" />
+
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader className="pb-2">
@@ -404,7 +482,7 @@ export default function AnalyticsOverview() {
                   <XAxis dataKey="count" type="number" hide />
                   <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
                   <Bar dataKey="count" fill="var(--color-count)" radius={4}>
-                    <LabelList dataKey="label" position="insideLeft" offset={8} className="fill-[var(--color-label)]" fontSize={12} />
+                    <LabelList dataKey="label" position="insideLeft" offset={8} className="fill-white" fontSize={12} />
                     <LabelList dataKey="count" position="right" offset={8} className="fill-foreground" fontSize={12} />
                   </Bar>
                 </BarChart>

@@ -32,6 +32,7 @@ import { format } from 'date-fns';
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { useState, useEffect } from 'react';
 import { usePhoenixLiveSet } from "@/hooks/usePhoenixLiveSet";
+import { usePreferencesStore } from "@/stores/preferences/preferences-store";
 import { useValidatedCertNos } from "@/hooks/useValidatedCertNos";
 
 interface Certificate {
@@ -87,7 +88,7 @@ export function ModernCertificatesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showPendingOnly, setShowPendingOnly] = useState(false);
-  const [liveOnly, setLiveOnly] = useState(false);
+  const { liveOnly, setLiveOnly } = usePreferencesStore();
   const { set: phoenixSet } = usePhoenixLiveSet();
   const { set: validatedSet } = useValidatedCertNos();
   const [currentPage, setCurrentPage] = useState(1);
@@ -281,6 +282,16 @@ export function ModernCertificatesPage() {
     );
   }
 
+    // Cards should reflect Live toggle: compute source set for card counts
+    const normalize = (s: string) => (s || '').toString().trim().toUpperCase();
+    const cardsSource = liveOnly && phoenixSet
+      ? certificates.filter(c => phoenixSet.has(normalize(c.cert_no)))
+      : certificates;
+    const totalCount = cardsSource.length;
+    const passCount = cardsSource.filter(c => c.overall_status === 'PASS').length;
+    const failCount = cardsSource.filter(c => c.overall_status === 'FAIL').length;
+    const attentionCount = cardsSource.filter(c => c.overall_status === 'ATTENTION').length;
+
     return (
       <div className="@container/main flex flex-1 flex-col">
         <div className="flex flex-col gap-6 py-6 md:gap-8 md:py-8 px-4 lg:px-6">
@@ -296,7 +307,7 @@ export function ModernCertificatesPage() {
             <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold tabular-nums">{certificates.length.toLocaleString()}</div>
+            <div className="text-2xl font-bold tabular-nums">{totalCount.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">All certificates</p>
           </CardContent>
         </Card>
@@ -304,11 +315,11 @@ export function ModernCertificatesPage() {
         <Card className="shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Passed</CardTitle>
-            <CheckCircle className="h-4 w-4 text-foreground opacity-70" />
+            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tabular-nums">
-              {certificates.filter(c => c.overall_status === 'PASS').length.toLocaleString()}
+              {passCount.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">Successful evaluations</p>
           </CardContent>
@@ -317,11 +328,11 @@ export function ModernCertificatesPage() {
         <Card className="shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Failed</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-foreground opacity-70" />
+            <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tabular-nums">
-              {certificates.filter(c => c.overall_status === 'FAIL').length.toLocaleString()}
+              {failCount.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">Failed evaluations</p>
           </CardContent>
@@ -330,11 +341,11 @@ export function ModernCertificatesPage() {
         <Card className="shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Attention</CardTitle>
-            <Clock className="h-4 w-4 text-foreground opacity-70" />
+            <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tabular-nums">
-              {certificates.filter(c => c.overall_status === 'ATTENTION').length.toLocaleString()}
+              {attentionCount.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">Needs review</p>
           </CardContent>

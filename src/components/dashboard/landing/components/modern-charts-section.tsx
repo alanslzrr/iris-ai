@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { usePreferencesStore } from '@/stores/preferences/preferences-store';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,13 +45,15 @@ export function ModernChartsSection() {
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState('30d');
   const isMobile = useIsMobile();
+  const { liveOnly } = usePreferencesStore();
 
   const fetchPanel2Data = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`/api/dashboard/panel2-analysis?range=${timeRange}`);
+      const liveQuery = liveOnly ? `&live=1` : '';
+      const response = await fetch(`/api/dashboard/panel2-analysis?range=${timeRange}${liveQuery}`);
       const data = await response.json();
       
       if (data.success) {
@@ -68,7 +71,7 @@ export function ModernChartsSection() {
 
   useEffect(() => {
     fetchPanel2Data();
-  }, [timeRange]);
+  }, [timeRange, liveOnly]);
 
   useEffect(() => {
     if (isMobile) {

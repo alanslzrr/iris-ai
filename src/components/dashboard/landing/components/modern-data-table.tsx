@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { usePhoenixLiveSet } from "@/hooks/usePhoenixLiveSet";
+import { usePreferencesStore } from "@/stores/preferences/preferences-store";
 import { useValidatedCertNos } from "@/hooks/useValidatedCertNos";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -87,7 +88,7 @@ export function ModernDataTable({ dateRange: controlledDateRange, onDateRangeCha
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<keyof Certificate>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [liveOnly, setLiveOnly] = useState(false);
+  const { liveOnly, setLiveOnly } = usePreferencesStore();
   const [uncontrolledDateRange, setUncontrolledDateRange] = useState<DateRange | undefined>();
   const [hoveredDate, setHoveredDate] = useState<Date | undefined>();
   const dateRange = useMemo(() => (
@@ -173,7 +174,8 @@ export function ModernDataTable({ dateRange: controlledDateRange, onDateRangeCha
 
     // Apply Live filter by intersecting with Phoenix current certificates
     if (liveOnly && phoenixSet) {
-      filtered = filtered.filter(cert => phoenixSet.has(cert.cert_no));
+      const normalize = (s: string) => (s || '').toString().trim().toUpperCase();
+      filtered = filtered.filter(cert => phoenixSet.has(normalize(cert.cert_no)));
     }
 
     // Apply sorting

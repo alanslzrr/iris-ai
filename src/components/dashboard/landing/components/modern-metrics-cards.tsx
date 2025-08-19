@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { usePreferencesStore } from '@/stores/preferences/preferences-store';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -107,7 +108,7 @@ export function ModernMetricsCards({ dateRange }: ModernMetricsCardsProps) {
   const [panel1Data, setPanel1Data] = useState<Panel1Data | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [liveOnly, setLiveOnly] = useState(false);
+  const { liveOnly, setLiveOnly } = usePreferencesStore();
 
   const fetchPanel1Data = async () => {
     try {

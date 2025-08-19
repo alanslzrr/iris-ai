@@ -14,6 +14,7 @@ import { CheckCircle, AlertTriangle, Search, RefreshCw, ArrowLeft, ArrowRight, E
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePhoenixLiveSet } from '@/hooks/usePhoenixLiveSet';
+import { usePreferencesStore } from '@/stores/preferences/preferences-store';
 
 type ValidationStatus = 'APPROVED' | 'REJECTED';
 
@@ -40,7 +41,7 @@ export default function ValidatedPage() {
   const [sortField, setSortField] = useState<keyof ValidatedRecord>('approved_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const pageSize = 25;
-  const [liveOnly, setLiveOnly] = useState(false);
+  const { liveOnly, setLiveOnly } = usePreferencesStore();
   const { set: phoenixSet, loading: liveLoading } = usePhoenixLiveSet();
 
   const fetchValidated = async () => {
@@ -78,7 +79,10 @@ export default function ValidatedPage() {
 
   // Client-side filter by Live intersection
   const liveFilteredRows = liveOnly && phoenixSet
-    ? records.filter(r => phoenixSet.has(r.cert_no))
+    ? records.filter(r => {
+        const normalize = (s: string) => (s || '').toString().trim().toUpperCase();
+        return phoenixSet.has(normalize(r.cert_no));
+      })
     : records;
 
   const filteredAndSorted = useMemo(() => {

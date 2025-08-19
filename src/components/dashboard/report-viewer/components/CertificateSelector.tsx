@@ -11,6 +11,7 @@ import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { Search, Calendar, Building, Wrench, CheckCircle, AlertTriangle, Clock, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { usePhoenixLiveSet } from '@/hooks/usePhoenixLiveSet';
+import { usePreferencesStore } from '@/stores/preferences/preferences-store';
 import { useValidatedCertNos } from '@/hooks/useValidatedCertNos';
 
 interface Certificate {
@@ -42,7 +43,7 @@ export function CertificateSelector({ onCertificateSelect, selectedCertNo }: Cer
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showPendingOnly, setShowPendingOnly] = useState(false);
   const { set: validatedSet } = useValidatedCertNos();
-  const [liveOnly, setLiveOnly] = useState(false);
+  const { liveOnly, setLiveOnly } = usePreferencesStore();
   const { set: phoenixSet, loading: liveLoading } = usePhoenixLiveSet();
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<keyof Certificate>('created_at');
@@ -95,7 +96,8 @@ export function CertificateSelector({ onCertificateSelect, selectedCertNo }: Cer
   // Phoenix set is prefetched globally via hook cache for snappy toggling
 
   if (liveOnly && phoenixSet) {
-    filteredCertificates = filteredCertificates.filter(c => phoenixSet.has(c.cert_no));
+    const normalize = (s: string) => (s || '').toString().trim().toUpperCase();
+    filteredCertificates = filteredCertificates.filter(c => phoenixSet.has(normalize(c.cert_no)));
   }
 
   if (showPendingOnly && validatedSet) {

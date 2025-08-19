@@ -19,6 +19,8 @@ interface PreferencesState {
   sidebarVariant: SidebarVariant
   sidebarCollapsible: SidebarCollapsible
   contentLayout: ContentLayout
+  liveOnly: boolean
+  setLiveOnly: (live: boolean) => void
   setThemeMode: (mode: ThemeMode) => void
   setThemePreset: (preset: ThemePreset) => void
   setSidebarVariant: (variant: SidebarVariant) => void
@@ -34,6 +36,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       sidebarVariant: "sidebar",
       sidebarCollapsible: "icon",
       contentLayout: "centered",
+      liveOnly: true,
+      setLiveOnly: (liveOnly) => set({ liveOnly }),
       setThemeMode: (themeMode) => set({ themeMode }),
       setThemePreset: (themePreset) => set({ themePreset }),
       setSidebarVariant: (sidebarVariant) => set({ sidebarVariant }),
