@@ -262,7 +262,7 @@ export function TolerancePipelineSection({ pipelineResults }: TolerancePipelineS
       )}
 
       {/* 2. TOLERANCE SPECIFICATION SOURCES */}
-      {(pr.tolerance_specification || pr.instrument_manual || pr.web_search) && (
+      {(pr.tolerance_specification || pr.instrument_manual || pr.web_search || pr.pdf_extraction) && (
         <Card className="shadow-xs">
           <CardHeader>
             <CardTitle className="text-lg">Tolerance Specification Sources</CardTitle>
@@ -481,7 +481,7 @@ export function TolerancePipelineSection({ pipelineResults }: TolerancePipelineS
               )}
 
               {/* Level 3 - Instrument Manual */}
-              {pr.instrument_manual?.success && !pr.tolerance_specification?.tolerance_data?.level && (
+              {pr.instrument_manual?.success && (
                 <div className="space-y-4">
                   {/* Level Badge and Description */}
                   <div className="bg-muted border border-border rounded-lg p-4 shadow-sm">
@@ -543,7 +543,7 @@ export function TolerancePipelineSection({ pipelineResults }: TolerancePipelineS
               )}
 
               {/* Level 4 - PDF Extraction */}
-              {pr.pdf_extraction?.success && !pr.tolerance_specification?.tolerance_data?.level && !pr.instrument_manual?.success && (
+              {pr.pdf_extraction?.success && (
                 <div className="space-y-4">
                   {/* Level Badge and Description */}
                   <div className="bg-muted border border-border rounded-lg p-4 shadow-sm">
@@ -619,7 +619,7 @@ export function TolerancePipelineSection({ pipelineResults }: TolerancePipelineS
               )}
 
               {/* Level 5 - Web Search Results */}
-              {pr.web_search?.success && pr.web_search.specifications && !pr.tolerance_specification?.tolerance_data?.level && !pr.instrument_manual?.success && !pr.pdf_extraction?.success && (
+              {pr.web_search?.success && pr.web_search.specifications && (
                 <div className="space-y-4">
                   {/* Level Badge and Description */}
                   <div className="bg-muted border border-border rounded-lg p-4 shadow-sm">

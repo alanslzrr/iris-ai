@@ -6,6 +6,7 @@ export interface ValidationRecord {
   tolerance_errors?: ValidationErrors | null;
   cmc_errors?: ValidationErrors | null;
   requirements_errors?: ValidationErrors | null;
+  client_feedback?: string | null;
 }
 
 export interface ValidationErrors {
@@ -107,4 +108,5 @@ export interface RejectFormData {
     codes: string[];
     another_reason: string;
   };
+  comment?: string;
 }

@@ -40,7 +40,8 @@ export async function GET(request: NextRequest) {
         approved_at: data.approved_at,
         tolerance_errors: data.tolerance_errors,
         cmc_errors: data.cmc_errors,
-        requirements_errors: data.requirements_errors
+        requirements_errors: data.requirements_errors,
+        client_feedback: (data as any)?.client_feedback ?? null
       });
     } else {
       return NextResponse.json({

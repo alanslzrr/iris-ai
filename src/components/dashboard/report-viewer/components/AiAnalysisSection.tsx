@@ -125,6 +125,7 @@ export function AiAnalysisSection({ results }: AiAnalysisSectionProps) {
                 </div>
               </div>
             )}
+            {/* Human recommendation (post-validation) if present in validation status API can be shown elsewhere */}
           </CardContent>
         </Card>
       )}

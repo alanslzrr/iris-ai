@@ -53,6 +53,22 @@ class PhoenixApiService {
     this.password = process.env.PHOENIX_PASSWORD || '';
   }
 
+  private getHostOrigin(): string {
+    try {
+      const listUrl = process.env.LIST_ALL_CERTIFICATES_API_URL;
+      if (listUrl) {
+        const u = new URL(listUrl);
+        return u.origin;
+      }
+    } catch {}
+    try {
+      const loginUrl = process.env.PHOENIX_LOGIN_API_URL || `${this.baseURL}/api/auth/login`;
+      const u = new URL(loginUrl);
+      return u.origin;
+    } catch {}
+    return this.baseURL;
+  }
+
   async authenticate(): Promise<string> {
     try {
       const response = await axios.post(process.env.PHOENIX_LOGIN_API_URL || `${this.baseURL}/api/auth/login`, {
@@ -192,6 +208,112 @@ class PhoenixApiService {
       processingRate: comparison.total.phoenix > 0 ? 
         (comparison.total.matched / comparison.total.phoenix) * 100 : 0
     };
+  }
+
+  // Approve calibration via Phoenix endpoint
+  async approveCalibration(params: {
+    calibrationId: string;
+    revisionComment: string;
+    justificationComment?: string | null;
+    AIAnalysis?: string | null;
+  }): Promise<void> {
+    const { calibrationId, revisionComment, justificationComment, AIAnalysis } = params;
+    if (!calibrationId) throw new Error('approveCalibration: calibrationId is required');
+    const headers = await this.getAuthHeaders();
+    const origin = this.getHostOrigin();
+    const url = `${origin}/api/ServiceItem/InsertServiceItemApprove/${encodeURIComponent(calibrationId)}`;
+    
+    try {
+      const response = await axios.get(url, {
+        headers,
+        params: {
+          revisionComment,
+          justificationComment: justificationComment ?? '',
+          AIAnalysis: AIAnalysis ?? ''
+        }
+      });
+      console.log('Phoenix approval successful:', { calibrationId, status: response.status });
+    } catch (error: any) {
+      console.error('Phoenix approval failed:', {
+        calibrationId,
+        url,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // Create a more detailed error message
+      let errorMessage = 'Phoenix approval failed';
+      if (error.response?.status) {
+        errorMessage += ` (HTTP ${error.response.status})`;
+      }
+      if (error.response?.data) {
+        if (typeof error.response.data === 'string') {
+          errorMessage += `: ${error.response.data}`;
+        } else if (error.response.data.message) {
+          errorMessage += `: ${error.response.data.message}`;
+        } else if (error.response.data.error) {
+          errorMessage += `: ${error.response.data.error}`;
+        }
+      }
+      
+      throw new Error(errorMessage);
+    }
+  }
+
+  // Reject calibration via Phoenix endpoint
+  async rejectCalibration(params: {
+    calibrationId: string;
+    calibrationErrorListId: string;
+    comment: string;
+  }): Promise<void> {
+    const { calibrationId, calibrationErrorListId, comment } = params;
+    if (!calibrationId) throw new Error('rejectCalibration: calibrationId is required');
+    const headers = await this.getAuthHeaders();
+    const origin = this.getHostOrigin();
+    const url = `${origin}/api/Calibration/CreateCalibrationError`;
+    const body = {
+      CalibrationId: calibrationId,
+      CalibrationErrors: [
+        {
+          CalibrationErrorListId: calibrationErrorListId,
+          Comment: comment,
+          Attachments: [] as any[]
+        }
+      ]
+    };
+    
+    try {
+      const response = await axios.post(url, body, { headers });
+      console.log('Phoenix rejection successful:', { calibrationId, status: response.status });
+    } catch (error: any) {
+      console.error('Phoenix rejection failed:', {
+        calibrationId,
+        url,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // Create a more detailed error message
+      let errorMessage = 'Phoenix rejection failed';
+      if (error.response?.status) {
+        errorMessage += ` (HTTP ${error.response.status})`;
+      }
+      if (error.response?.data) {
+        if (typeof error.response.data === 'string') {
+          errorMessage += `: ${error.response.data}`;
+        } else if (error.response.data.message) {
+          errorMessage += `: ${error.response.data.message}`;
+        } else if (error.response.data.error) {
+          errorMessage += `: ${error.response.data.error}`;
+        }
+      }
+      
+      throw new Error(errorMessage);
+    }
   }
 }
 
