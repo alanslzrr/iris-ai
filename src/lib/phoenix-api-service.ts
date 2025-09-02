@@ -49,8 +49,8 @@ class PhoenixApiService {
 
   constructor() {
     this.baseURL = process.env.PHOENIX_LOGIN_API_URL?.replace('/api/auth/login', '') || 'http://portal.phoenixcalibrationdr.com';
-    this.username = process.env.PHOENIX_USERNAME || '';
-    this.password = process.env.PHOENIX_PASSWORD || '';
+    this.username = (process.env.PHOENIX_USERNAME || '').trim();
+    this.password = (process.env.PHOENIX_PASSWORD || '').trim();
   }
 
   private getHostOrigin(): string {
